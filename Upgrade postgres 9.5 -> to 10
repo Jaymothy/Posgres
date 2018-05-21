@@ -1,0 +1,31 @@
+Make a backup. Make sure that your database is not being updated.
+
+pg_dumpall > outputfile
+Install Postgres 10. Follow instructions on this page: https://www.postgresql.org/download/linux/ubuntu/
+
+Then run sudo apt-get install postgresql-10. A newer version will be installed side-by-side with the earlier version.
+
+Run pg_lsclusters:
+
+Ver Cluster Port Status Owner    Data directory               Log file
+9.6 main    5432 online postgres /var/lib/postgresql/9.6/main /var/log/postgresql/postgresql-9.6-main.log
+10  main    5433 online postgres /var/lib/postgresql/10/main  /var/log/postgresql/postgresql-10-main.log
+There already is a cluster main for 10 (since this is created by default on package installation). This is done so that a fresh installation works out of the box without the need to create a cluster first, but of course it clashes when you try to upgrade 9.6/main when 10/main also exists. The recommended procedure is to remove the 10 cluster with pg_dropcluster and then upgrade with pg_upgradecluster.
+
+Stop the 10 cluster and drop it:
+
+sudo pg_dropcluster 10 main --stop
+Stop all processes and services writing to the database. Stop the database:
+
+sudo systemctl stop postgresql 
+Upgrade the 9.6 cluster:
+
+sudo pg_upgradecluster -m upgrade 9.6 main
+Run pg_lsclusters. Your 9.6 cluster should now be "down", and the 10 cluster should be online at 5432:
+
+Ver Cluster Port Status Owner    Data directory               Log file
+9.6 main    5433 down   postgres /var/lib/postgresql/9.6/main /var/log/postgresql/postgresql-9.6-main.log
+10  main    5432 online postgres /var/lib/postgresql/10/main  /var/log/postgresql/postgresql-10-main.log
+First, check that everything works fine. After that, remove the 9.5 cluster:
+
+ sudo pg_dropcluster 9.6 main --stop
